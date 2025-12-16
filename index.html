@@ -7983,16 +7983,6 @@ button {
                           Object(c["e"])(
                             "div",
                             {
-                              onClick:
-                                t[13] ||
-                                (t[13] = function (t) {
-                                  return (e.showBg = !e.showBg);
-                                }),
-                              onTouchstart:
-                                t[14] ||
-                                (t[14] = function (t) {
-                                  return (e.showBg = !e.showBg);
-                                }),
                               style: {
                                 "margin-right": "12px",
                                 cursor: "pointer",
@@ -8029,16 +8019,6 @@ button {
                           Object(c["e"])(
                             "div",
                             {
-                              onClick:
-                                t[16] ||
-                                (t[16] = function (t) {
-                                  return (e.showSecond = !e.showSecond);
-                                }),
-                              onTouchstart:
-                                t[17] ||
-                                (t[17] = function (t) {
-                                  return (e.showSecond = !e.showSecond);
-                                }),
                               style: { cursor: "pointer" },
                             },
                             [
@@ -8595,7 +8575,16 @@ button {
             (o.value = !1), n("closeSet");
           },
           i = function (e) {
-            e.toElement && l.value !== e.toElement && r();
+            // 检查离开的元素是否是输入框或输入框的子元素，如果是则不隐藏设置框
+            if (e.toElement && l.value !== e.toElement) {
+              // 检查元素是否是输入框或在输入框内
+              const isInputElement = e.toElement.tagName === 'INPUT' || 
+                                    e.toElement.closest('.time-input') ||
+                                    e.toElement.closest('.time-panel');
+              if (!isInputElement) {
+                r();
+              }
+            }
           };
         return (
           Object(c["g"])(function () {
@@ -8836,19 +8825,45 @@ button {
           },
           enterFullScreen: function () {
             var e = document.documentElement;
-            // 尝试使用更完整的参数配置来控制全屏行为
-            const fullscreenOptions = {
-              navigationUI: 'hide' // 隐藏导航UI
-            };
-            if (e.requestFullscreen) {
-              e.requestFullscreen(fullscreenOptions);
-            } else if (e.mozRequestFullScreen) {
-              e.mozRequestFullScreen(fullscreenOptions);
-            } else if (e.webkitRequestFullscreen) {
-              // WebKit浏览器可能需要不同的参数
-              e.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
-            } else if (e.msRequestFullscreen) {
-              e.msRequestFullscreen();
+            // 检测是否是苹果设备
+            const isAppleDevice = /(iPhone|iPad|iPod|Mac)/i.test(navigator.userAgent);
+            
+            try {
+              if (e.requestFullscreen) {
+                e.requestFullscreen({ navigationUI: 'hide' });
+              } else if (e.mozRequestFullScreen) {
+                e.mozRequestFullScreen({ navigationUI: 'hide' });
+              } else if (e.webkitRequestFullscreen) {
+                // WebKit浏览器（包括Safari）
+                if (isAppleDevice) {
+                  // Safari特殊处理：不使用ALLOW_KEYBOARD_INPUT参数
+                  if (e.webkitRequestFullscreen) {
+                    e.webkitRequestFullscreen();
+                  } else {
+                    // 某些版本的Safari可能需要对body元素调用
+                    document.body.webkitRequestFullscreen();
+                  }
+                } else {
+                  // 其他WebKit浏览器
+                  e.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+                }
+              } else if (e.msRequestFullscreen) {
+                e.msRequestFullscreen();
+              } else {
+                console.warn('Fullscreen API not supported');
+              }
+            } catch (error) {
+              console.error('Failed to enter fullscreen:', error);
+              // 尝试使用body元素作为备选
+              try {
+                if (document.body.requestFullscreen) {
+                  document.body.requestFullscreen();
+                } else if (document.body.webkitRequestFullscreen) {
+                  document.body.webkitRequestFullscreen();
+                }
+              } catch (e) {
+                console.error('Fallback fullscreen attempt failed:', e);
+              }
             }
             // 更新当前实例的isFullScreen状态
             this.isFullScreen = !0;
@@ -8859,14 +8874,20 @@ button {
             }
           },
           exitFullScreen: function () {
-            if (document.exitFullscreen) {
-              document.exitFullscreen();
-            } else if (document.mozCancelFullScreen) {
-              document.mozCancelFullScreen();
-            } else if (document.webkitExitFullscreen) {
-              document.webkitExitFullscreen();
-            } else if (document.msExitFullscreen) {
-              document.msExitFullscreen();
+            try {
+              if (document.exitFullscreen) {
+                document.exitFullscreen();
+              } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+              } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+              } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+              } else {
+                console.warn('Exit fullscreen API not supported');
+              }
+            } catch (error) {
+              console.error('Failed to exit fullscreen:', error);
             }
             // 更新当前实例的isFullScreen状态
             this.isFullScreen = !1;
