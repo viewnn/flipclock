@@ -7505,6 +7505,41 @@ button {
   },
 ]);
 </script>
+<!-- 全屏时不息屏 -->
+<script>
+let wakeLock = null;
+
+// 请求保持屏幕常亮，需要用户点击触发
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      console.log("屏幕唤醒锁已开启，屏幕不会息屏");
+
+      // 锁被释放时回调
+      wakeLock.addEventListener('release', () => {
+        console.log('唤醒锁已释放');
+      });
+    } else {
+      alert("你的浏览器不支持屏幕常亮API，请调整电脑电源设置");
+    }
+  } catch (err) {
+    console.error(`唤醒锁失败: ${err.name}, ${err.message}`);
+  }
+}
+
+// 页面可见性变化，切回页面重新获取锁
+document.addEventListener('visibilitychange', async () => {
+  if (wakeLock !== null && document.visibilityState === 'visible') {
+    await requestWakeLock();
+  }
+});
+
+// 页面加载完成后，需要用户点击页面任意位置开启常亮
+window.addEventListener('load', ()=>{
+  document.body.addEventListener('click', requestWakeLock, {once:true});
+})
+</script>
     <!-- 引入应用主脚本 -->
     <script>(function (e) {
   function t(t) {
